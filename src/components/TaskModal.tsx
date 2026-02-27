@@ -59,7 +59,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
           <div className="flex-1 mr-4">
             <h2 className="text-lg font-semibold">{liveTask.title}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[liveTask.status] || 'bg-gray-500/20 text-gray-400'}`}>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[liveTask.status] || 'bg-mc-text-secondary/20 text-gray-400'}`}>
                 {liveTask.status.replace('_', ' ').toUpperCase()}
               </span>
               {liveTask.assigned_agent && (

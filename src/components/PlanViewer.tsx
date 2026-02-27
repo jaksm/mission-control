@@ -41,19 +41,19 @@ interface PlanViewerProps {
 const statusIcons: Record<string, JSX.Element> = {
   completed: <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />,
   in_progress: <Clock className="w-4 h-4 text-blue-400 flex-shrink-0 animate-pulse" />,
-  pending: <Circle className="w-4 h-4 text-gray-500 flex-shrink-0" />,
+  pending: <Circle className="w-4 h-4 text-mc-text-secondary flex-shrink-0" />,
   failed: <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />,
   blocked: <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0" />,
-  cancelled: <Ban className="w-4 h-4 text-gray-600 flex-shrink-0" />,
+  cancelled: <Ban className="w-4 h-4 text-mc-text-secondary/60 flex-shrink-0" />,
 };
 
 const statusColors: Record<string, string> = {
   completed: 'text-green-400',
   in_progress: 'text-blue-400',
-  pending: 'text-gray-500',
+  pending: 'text-mc-text-secondary',
   failed: 'text-red-400',
   blocked: 'text-yellow-400',
-  cancelled: 'text-gray-600',
+  cancelled: 'text-mc-text-secondary/60',
 };
 
 function countProgress(tasks: PlanTask[]): { total: number; completed: number } {
@@ -105,7 +105,7 @@ function TaskNode({ task, depth = 0 }: { task: PlanTask; depth?: number }) {
         {/* Task content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-mono ${statusColors[task.status] || 'text-gray-500'}`}>
+            <span className={`text-xs font-mono ${statusColors[task.status] || 'text-mc-text-secondary'}`}>
               {task.id}
             </span>
             <span className={`text-sm ${task.status === 'completed' ? 'text-mc-text-secondary' : 'text-mc-text'}`}>

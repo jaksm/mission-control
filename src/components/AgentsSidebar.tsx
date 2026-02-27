@@ -207,7 +207,7 @@ export function AgentsSidebar({ workspaceId }: AgentsSidebarProps) {
                     className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
                       agent.status === 'working' ? 'bg-mc-accent-green' :
                       agent.status === 'standby' ? 'bg-mc-text-secondary' :
-                      'bg-gray-500'
+                      'bg-mc-text-secondary'
                     }`}
                   />
                   {/* Tooltip */}
