@@ -1,27 +1,52 @@
 services:
-  mission-control:
-    container_name: mission-control
+  jaksa:
+    container_name: mc-jaksa
     build:
       context: .
       dockerfile: Dockerfile
     image: mission-control:latest
     ports:
-      - "4000:4000"
-    env_file:
-      - path: .env
-        required: false
+      - "4001:4000"
     environment:
       NODE_ENV: production
       DATABASE_PATH: /app/data/mission-control.db
       WORKSPACE_BASE_PATH: /app/workspace
       PROJECTS_PATH: /app/workspace/projects
-      # Set this if OpenClaw runs on the host machine:
-      # OPENCLAW_GATEWAY_URL: ws://host.docker.internal:18789
+      OPENCLAW_GATEWAY_URL: ws://host.docker.internal:18789
+      OPENCLAW_GATEWAY_TOKEN: ${JAKSA_GATEWAY_TOKEN}
+      MC_API_TOKEN: ${JAKSA_MC_API_TOKEN}
     volumes:
-      - mission-control-data:/app/data
-      - mission-control-workspace:/app/workspace
+      - jaksa-data:/app/data
+      - jaksa-workspace:/app/workspace
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  aleksa:
+    container_name: mc-aleksa
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mission-control:latest
+    ports:
+      - "4002:4000"
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /app/data/mission-control.db
+      WORKSPACE_BASE_PATH: /app/workspace
+      PROJECTS_PATH: /app/workspace/projects
+      OPENCLAW_GATEWAY_URL: ws://host.docker.internal:18839
+      OPENCLAW_GATEWAY_TOKEN: ${ALEKSA_GATEWAY_TOKEN}
+      MC_API_TOKEN: ${ALEKSA_MC_API_TOKEN}
+    volumes:
+      - aleksa-data:/app/data
+      - aleksa-workspace:/app/workspace
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
-  mission-control-data:
-  mission-control-workspace:
+  jaksa-data:
+  jaksa-workspace:
+  aleksa-data:
+  aleksa-workspace:
