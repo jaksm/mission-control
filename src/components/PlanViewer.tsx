@@ -72,9 +72,36 @@ function countProgress(tasks: PlanTask[]): { total: number; completed: number } 
   return { total, completed };
 }
 
+/**
+ * Derive effective status for a parent task based on its subtasks.
+ * If all subtasks are terminal (completed/cancelled), parent is effectively completed.
+ * If any subtask is in_progress, parent is in_progress.
+ * If any subtask is blocked/failed, parent reflects that.
+ */
+function deriveStatus(task: PlanTask): string {
+  if (!task.subtasks?.length) return task.status;
+
+  const childStatuses = task.subtasks.map(s => deriveStatus(s));
+  const terminal = new Set(['completed', 'cancelled']);
+
+  // All children terminal → parent is completed
+  if (childStatuses.every(s => terminal.has(s))) return 'completed';
+  // Any child in_progress → parent is in_progress
+  if (childStatuses.some(s => s === 'in_progress')) return 'in_progress';
+  // Any child failed → parent shows failed
+  if (childStatuses.some(s => s === 'failed')) return 'failed';
+  // Any child blocked → parent shows blocked
+  if (childStatuses.some(s => s === 'blocked')) return 'blocked';
+  // Mix of pending + completed → in_progress
+  if (childStatuses.some(s => terminal.has(s)) && childStatuses.some(s => s === 'pending')) return 'in_progress';
+
+  return task.status;
+}
+
 function TaskNode({ task, depth = 0 }: { task: PlanTask; depth?: number }) {
+  const effectiveStatus = deriveStatus(task);
   const [expanded, setExpanded] = useState(
-    task.status === 'in_progress' || task.subtasks?.some(s => s.status === 'in_progress')
+    effectiveStatus === 'in_progress' || task.subtasks?.some(s => deriveStatus(s) === 'in_progress')
   );
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const hasContext = task.context && (task.context.findings?.length || task.context.decisions?.length || task.context.files?.length);
@@ -99,16 +126,16 @@ function TaskNode({ task, depth = 0 }: { task: PlanTask; depth?: number }) {
           <div className="w-4.5" />
         )}
 
-        {/* Status icon */}
-        {statusIcons[task.status] || statusIcons.pending}
+        {/* Status icon — uses derived status for parents */}
+        {statusIcons[effectiveStatus] || statusIcons.pending}
 
         {/* Task content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-mono ${statusColors[task.status] || 'text-mc-text-secondary'}`}>
+            <span className={`text-xs font-mono ${statusColors[effectiveStatus] || 'text-gray-500'}`}>
               {task.id}
             </span>
-            <span className={`text-sm ${task.status === 'completed' ? 'text-mc-text-secondary' : 'text-mc-text'}`}>
+            <span className={`text-sm ${effectiveStatus === 'completed' ? 'text-mc-text-secondary' : 'text-mc-text'}`}>
               {task.title}
             </span>
             {task.checkpoint && (
