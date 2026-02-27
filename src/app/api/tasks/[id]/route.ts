@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { queryOne, run, queryAll } from '@/lib/db';
+import { queryOne, run } from '@/lib/db';
 import { broadcast } from '@/lib/events';
-import { getMissionControlUrl } from '@/lib/config';
 import { UpdateTaskSchema } from '@/lib/validation';
-import type { Task, UpdateTaskRequest, Agent, TaskDeliverable } from '@/lib/types';
+import type { Task, UpdateTaskRequest, Agent } from '@/lib/types';
 
 // GET /api/tasks/[id] - Get a single task
 export async function GET(
@@ -43,7 +42,7 @@ export async function PATCH(
     const { id } = await params;
     const body: UpdateTaskRequest & { updated_by_agent_id?: string } = await request.json();
 
-    // Validate input with Zod
+    // Validate input
     const validation = UpdateTaskSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -53,7 +52,6 @@ export async function PATCH(
     }
 
     const validatedData = validation.data;
-
     const existing = queryOne<Task>('SELECT * FROM tasks WHERE id = ?', [id]);
     if (!existing) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
@@ -63,15 +61,12 @@ export async function PATCH(
     const values: unknown[] = [];
     const now = new Date().toISOString();
 
-    // Workflow enforcement for agent-initiated approvals
-    // If an agent is trying to move review→done, they must be a master agent
-    // User-initiated moves (no agent ID) are allowed
+    // Workflow enforcement: only master agents can approve review→done
     if (validatedData.status === 'done' && existing.status === 'review' && validatedData.updated_by_agent_id) {
       const updatingAgent = queryOne<Agent>(
         'SELECT is_master FROM agents WHERE id = ?',
         [validatedData.updated_by_agent_id]
       );
-
       if (!updatingAgent || !updatingAgent.is_master) {
         return NextResponse.json(
           { error: 'Forbidden: only the master agent can approve tasks' },
@@ -88,29 +83,12 @@ export async function PATCH(
       updates.push('description = ?');
       values.push(validatedData.description);
     }
-    if (validatedData.priority !== undefined) {
-      updates.push('priority = ?');
-      values.push(validatedData.priority);
-    }
-    if (validatedData.due_date !== undefined) {
-      updates.push('due_date = ?');
-      values.push(validatedData.due_date);
-    }
-
-    // Track if we need to dispatch task
-    let shouldDispatch = false;
 
     // Handle status change
     if (validatedData.status !== undefined && validatedData.status !== existing.status) {
       updates.push('status = ?');
       values.push(validatedData.status);
 
-      // Auto-dispatch when moving to assigned
-      if (validatedData.status === 'assigned' && existing.assigned_agent_id) {
-        shouldDispatch = true;
-      }
-
-      // Log status change event
       const eventType = validatedData.status === 'done' ? 'task_completed' : 'task_status_changed';
       run(
         `INSERT INTO events (id, type, task_id, message, created_at)
@@ -132,11 +110,6 @@ export async function PATCH(
              VALUES (?, ?, ?, ?, ?, ?)`,
             [uuidv4(), 'task_assigned', validatedData.assigned_agent_id, id, `"${existing.title}" assigned to ${agent.name}`, now]
           );
-
-          // Auto-dispatch if already in assigned status or being assigned now
-          if (existing.status === 'assigned' || validatedData.status === 'assigned') {
-            shouldDispatch = true;
-          }
         }
       }
     }
@@ -151,7 +124,7 @@ export async function PATCH(
 
     run(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`, values);
 
-    // Fetch updated task with all joined fields
+    // Fetch updated task
     const task = queryOne<Task>(
       `SELECT t.*,
         aa.name as assigned_agent_name,
@@ -165,24 +138,9 @@ export async function PATCH(
       [id]
     );
 
-    // Broadcast task update via SSE
+    // Broadcast via SSE
     if (task) {
-      broadcast({
-        type: 'task_updated',
-        payload: task,
-      });
-    }
-
-    // Trigger auto-dispatch if needed
-    if (shouldDispatch) {
-      // Call dispatch endpoint asynchronously (don't wait for response)
-      const missionControlUrl = getMissionControlUrl();
-      fetch(`${missionControlUrl}/api/tasks/${id}/dispatch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }).catch(err => {
-        console.error('Auto-dispatch failed:', err);
-      });
+      broadcast({ type: 'task_updated', payload: task });
     }
 
     return NextResponse.json(task);
@@ -205,21 +163,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Delete or nullify related records first (foreign key constraints)
-    // Note: task_activities and task_deliverables have ON DELETE CASCADE
+    // Delete related records
     run('DELETE FROM openclaw_sessions WHERE task_id = ?', [id]);
     run('DELETE FROM events WHERE task_id = ?', [id]);
-    // Conversations reference tasks - nullify or delete
-    run('UPDATE conversations SET task_id = NULL WHERE task_id = ?', [id]);
 
-    // Now delete the task (cascades to task_activities and task_deliverables)
+    // Delete the task (cascades to task_activities and task_deliverables)
     run('DELETE FROM tasks WHERE id = ?', [id]);
 
     // Broadcast deletion via SSE
-    broadcast({
-      type: 'task_deleted',
-      payload: { id },
-    });
+    broadcast({ type: 'task_deleted', payload: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

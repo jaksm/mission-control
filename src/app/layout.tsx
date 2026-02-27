@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { JetBrains_Mono } from 'next/font/google';
-import DemoBanner from '@/components/DemoBanner';
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -12,7 +11,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Mission Control',
-  description: 'AI Agent Orchestration Dashboard',
+  description: 'AI Agent Monitoring Dashboard',
   icons: {
     icon: '/favicon.svg',
   },
@@ -26,7 +25,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={jetbrainsMono.variable}>
       <body className={`${jetbrainsMono.className} bg-mc-bg text-mc-text min-h-screen`}>
-        <DemoBanner />
         {children}
       </body>
     </html>

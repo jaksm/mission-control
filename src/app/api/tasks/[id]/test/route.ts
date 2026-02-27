@@ -67,7 +67,7 @@ const SCREENSHOTS_DIR = ((process.env.PROJECTS_PATH || '~/projects').replace(/^~
  * Run automated browser tests on all deliverables for a task
  *
  * Enhanced workflow:
- * - Runs on tasks in 'testing' status (moved there after agent completion)
+ * - Runs on tasks in 'review' status (moved there after agent completion)
  * - PASS -> moves to 'review' for human approval
  * - FAIL -> moves to 'assigned' for agent to fix
  */
@@ -519,7 +519,7 @@ export async function GET(
       'HTTP status code validation (for URL deliverables)'
     ],
     workflow: {
-      expectedStatus: 'testing',
+      expectedStatus: 'review',
       onPass: 'Moves to review for human approval',
       onFail: 'Moves to assigned for agent to fix issues'
     },

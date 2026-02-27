@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const businessId = searchParams.get('business_id');
     const workspaceId = searchParams.get('workspace_id');
     const assignedAgentId = searchParams.get('assigned_agent_id');
 
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
     const params: unknown[] = [];
 
     if (status) {
-      // Support comma-separated status values (e.g., status=inbox,testing,in_progress)
+      // Support comma-separated status values
       const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
       if (statuses.length === 1) {
         sql += ' AND t.status = ?';
@@ -37,10 +36,6 @@ export async function GET(request: NextRequest) {
         sql += ` AND t.status IN (${statuses.map(() => '?').join(',')})`;
         params.push(...statuses);
       }
-    }
-    if (businessId) {
-      sql += ' AND t.business_id = ?';
-      params.push(businessId);
     }
     if (workspaceId) {
       sql += ' AND t.workspace_id = ?';
@@ -80,7 +75,7 @@ export async function POST(request: NextRequest) {
     const body: CreateTaskRequest = await request.json();
     console.log('[POST /api/tasks] Received body:', JSON.stringify(body));
 
-    // Validate input with Zod
+    // Validate input
     const validation = CreateTaskSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -90,27 +85,22 @@ export async function POST(request: NextRequest) {
     }
 
     const validatedData = validation.data;
-
     const id = uuidv4();
     const now = new Date().toISOString();
-
     const workspaceId = validatedData.workspace_id || 'default';
-    const status = validatedData.status || 'inbox';
-    
+    const status = validatedData.status || 'backlog';
+
     run(
-      `INSERT INTO tasks (id, title, description, status, priority, assigned_agent_id, created_by_agent_id, workspace_id, business_id, due_date, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (id, title, description, status, assigned_agent_id, created_by_agent_id, workspace_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         validatedData.title,
         validatedData.description || null,
         status,
-        validatedData.priority || 'normal',
         validatedData.assigned_agent_id || null,
         validatedData.created_by_agent_id || null,
         workspaceId,
-        validatedData.business_id || 'default',
-        validatedData.due_date || null,
         now,
         now,
       ]
@@ -131,7 +121,7 @@ export async function POST(request: NextRequest) {
       [uuidv4(), 'task_created', body.created_by_agent_id || null, id, eventMessage, now]
     );
 
-    // Fetch created task with all joined fields
+    // Fetch created task with joined fields
     const task = queryOne<Task>(
       `SELECT t.*,
         aa.name as assigned_agent_name,
@@ -144,15 +134,12 @@ export async function POST(request: NextRequest) {
        WHERE t.id = ?`,
       [id]
     );
-    
-    // Broadcast task creation via SSE
+
+    // Broadcast via SSE
     if (task) {
-      broadcast({
-        type: 'task_created',
-        payload: task,
-      });
+      broadcast({ type: 'task_created', payload: task });
     }
-    
+
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
     console.error('Failed to create task:', error);

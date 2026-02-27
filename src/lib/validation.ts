@@ -1,17 +1,13 @@
 import { z } from 'zod';
 
-// Task status and priority enums from types
+// Task status enum — simplified pipeline
 const TaskStatus = z.enum([
-  'planning',
-  'inbox',
+  'backlog',
   'assigned',
   'in_progress',
-  'testing',
   'review',
   'done'
 ]);
-
-const TaskPriority = z.enum(['low', 'normal', 'high', 'urgent']);
 
 const ActivityType = z.enum([
   'spawned',
@@ -28,21 +24,16 @@ export const CreateTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(500, 'Title must be 500 characters or less'),
   description: z.string().max(10000, 'Description must be 10000 characters or less').optional(),
   status: TaskStatus.optional(),
-  priority: TaskPriority.optional(),
   assigned_agent_id: z.string().uuid().optional(),
   created_by_agent_id: z.string().uuid().optional(),
-  business_id: z.string().optional(),
   workspace_id: z.string().optional(),
-  due_date: z.string().optional().nullable(),
 });
 
 export const UpdateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(10000).optional(),
   status: TaskStatus.optional(),
-  priority: TaskPriority.optional(),
   assigned_agent_id: z.string().uuid().optional().nullable(),
-  due_date: z.string().optional().nullable(),
   updated_by_agent_id: z.string().uuid().optional(),
 });
 

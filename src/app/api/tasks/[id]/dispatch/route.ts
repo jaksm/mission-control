@@ -131,25 +131,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Build task message for agent
-    const priorityEmoji = {
-      low: '🔵',
-      normal: '⚪',
-      high: '🟡',
-      urgent: '🔴'
-    }[task.priority] || '⚪';
-
-    // Get project path for deliverables
     const projectsPath = getProjectsPath();
     const projectDir = task.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const taskProjectDir = `${projectsPath}/${projectDir}`;
     const missionControlUrl = getMissionControlUrl();
 
-    const taskMessage = `${priorityEmoji} **NEW TASK ASSIGNED**
+    const taskMessage = `⚡ **NEW TASK ASSIGNED**
 
 **Title:** ${task.title}
 ${task.description ? `**Description:** ${task.description}\n` : ''}
-**Priority:** ${task.priority.toUpperCase()}
-${task.due_date ? `**Due:** ${task.due_date}\n` : ''}
 **Task ID:** ${task.id}
 
 **OUTPUT DIRECTORY:** ${taskProjectDir}

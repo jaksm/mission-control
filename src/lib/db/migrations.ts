@@ -202,6 +202,72 @@ const migrations: Migration[] = [
         console.log('[Migration 007] Added gateway_agent_id to agents');
       }
     }
+  },
+  {
+    id: '008',
+    name: 'strip_planning_and_simplify',
+    up: (db) => {
+      console.log('[Migration 008] Stripping planning system, simplifying task model...');
+
+      // Drop planning tables
+      db.exec(`DROP TABLE IF EXISTS planning_questions`);
+      db.exec(`DROP TABLE IF EXISTS planning_specs`);
+      console.log('[Migration 008] Dropped planning_questions and planning_specs tables');
+
+      // Drop conversations/messages (we use Telegram)
+      db.exec(`DROP TABLE IF EXISTS conversation_participants`);
+      db.exec(`DROP TABLE IF EXISTS messages`);
+      db.exec(`DROP TABLE IF EXISTS conversations`);
+      console.log('[Migration 008] Dropped conversations, messages, conversation_participants tables');
+
+      // Drop businesses (legacy)
+      db.exec(`DROP TABLE IF EXISTS businesses`);
+      console.log('[Migration 008] Dropped businesses table');
+
+      // Recreate tasks table without planning/priority/due_date/business_id columns.
+      // SQLite ALTER TABLE DROP COLUMN requires 3.35.0+ — safer to recreate.
+      const tasksInfo = db.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
+      const needsMigration = tasksInfo.some(col => col.name === 'priority' || col.name === 'planning_session_key');
+      if (needsMigration) {
+        db.exec(`
+          CREATE TABLE tasks_new (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'backlog' CHECK (status IN ('backlog', 'assigned', 'in_progress', 'review', 'done')),
+            assigned_agent_id TEXT REFERENCES agents(id),
+            created_by_agent_id TEXT REFERENCES agents(id),
+            workspace_id TEXT DEFAULT 'default' REFERENCES workspaces(id),
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+          )
+        `);
+
+        // Map old statuses to new simplified ones
+        db.exec(`
+          INSERT INTO tasks_new (id, title, description, status, assigned_agent_id, created_by_agent_id, workspace_id, created_at, updated_at)
+          SELECT id, title, description,
+            CASE
+              WHEN status IN ('inbox', 'pending_dispatch', 'planning') THEN 'backlog'
+              WHEN status = 'assigned' THEN 'assigned'
+              WHEN status = 'in_progress' THEN 'in_progress'
+              WHEN status IN ('testing', 'review') THEN 'review'
+              WHEN status = 'done' THEN 'done'
+              ELSE 'backlog'
+            END,
+            assigned_agent_id, created_by_agent_id, workspace_id, created_at, updated_at
+          FROM tasks
+        `);
+
+        db.exec(`DROP TABLE tasks`);
+        db.exec(`ALTER TABLE tasks_new RENAME TO tasks`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_agent_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_workspace ON tasks(workspace_id)`);
+
+        console.log('[Migration 008] Recreated tasks table with simplified schema');
+      }
+    }
   }
 ];
 
