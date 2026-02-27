@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const workspaceId = searchParams.get('workspace_id');
     const assignedAgentId = searchParams.get('assigned_agent_id');
+    const agentName = searchParams.get('agent'); // Convenience: filter by agent name
 
     let sql = `
       SELECT
@@ -44,6 +45,10 @@ export async function GET(request: NextRequest) {
     if (assignedAgentId) {
       sql += ' AND t.assigned_agent_id = ?';
       params.push(assignedAgentId);
+    }
+    if (agentName) {
+      sql += ' AND LOWER(aa.name) = LOWER(?)';
+      params.push(agentName);
     }
 
     sql += ' ORDER BY t.created_at DESC';
