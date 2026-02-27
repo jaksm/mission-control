@@ -207,32 +207,34 @@ export default function WorkspacePage() {
       <Header workspace={workspace} />
 
       {/* View Tabs */}
-      <div className="flex border-b border-mc-border px-4">
+      <div className="flex border-b border-mc-border px-2 sm:px-4 overflow-x-auto">
         <button
           onClick={() => setActiveView('kanban')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
             activeView === 'kanban'
               ? 'text-mc-accent border-b-2 border-mc-accent'
               : 'text-mc-text-secondary hover:text-mc-text'
           }`}
         >
-          📋 Mission Queue
+          📋 Tasks
         </button>
         <button
           onClick={() => setActiveView('plans')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
             activeView === 'plans'
               ? 'text-mc-accent border-b-2 border-mc-accent'
               : 'text-mc-text-secondary hover:text-mc-text'
           }`}
         >
-          🔧 Dev Plans
+          🔧 Plans
         </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Agents Sidebar */}
-        <AgentsSidebar workspaceId={workspace.id} />
+        {/* Agents Sidebar — hidden on mobile */}
+        <div className="hidden lg:block">
+          <AgentsSidebar workspaceId={workspace.id} />
+        </div>
 
         {/* Main Content Area */}
         {activeView === 'kanban' ? (
@@ -243,8 +245,10 @@ export default function WorkspacePage() {
           </div>
         )}
 
-        {/* Live Feed */}
-        <LiveFeed />
+        {/* Live Feed — hidden on mobile */}
+        <div className="hidden xl:block">
+          <LiveFeed />
+        </div>
       </div>
 
       {/* Debug Panel - only shows when debug mode enabled */}

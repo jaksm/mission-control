@@ -39,14 +39,14 @@ export function MissionQueue({ workspaceId }: MissionQueueProps) {
         </span>
       </div>
 
-      {/* Kanban Columns — read-only */}
-      <div className="flex-1 flex gap-3 p-3 overflow-x-auto">
+      {/* Kanban Columns — read-only, snap scroll on mobile */}
+      <div className="flex-1 flex gap-3 p-3 overflow-x-auto snap-x snap-mandatory lg:snap-none">
         {COLUMNS.map((column) => {
           const columnTasks = getTasksByStatus(column.id);
           return (
             <div
               key={column.id}
-              className={`flex-1 min-w-[220px] max-w-[300px] flex flex-col bg-mc-bg rounded-lg border border-mc-border/50 border-t-2 ${column.color}`}
+              className={`flex-shrink-0 w-[85vw] sm:w-auto sm:flex-1 min-w-[220px] max-w-[300px] flex flex-col bg-mc-bg rounded-lg border border-mc-border/50 border-t-2 snap-center ${column.color}`}
             >
               {/* Column Header */}
               <div className="p-2 border-b border-mc-border flex items-center justify-between">
@@ -90,9 +90,9 @@ function TaskCard({ task, onClick }: TaskCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group bg-mc-bg-secondary border border-mc-border/50 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:shadow-black/20 hover:border-mc-accent/40"
+      className="group bg-mc-bg-secondary border border-mc-border/50 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:shadow-black/20 hover:border-mc-accent/40 active:scale-[0.98]"
     >
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {/* Title */}
         <h4 className="text-sm font-medium leading-snug line-clamp-2 mb-3">
           {task.title}
