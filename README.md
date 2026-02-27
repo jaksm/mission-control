@@ -1,107 +1,99 @@
-# Mission Control ⚡
+# Mission Control
 
-AI Agent Monitoring Dashboard — a read-only kanban board where agents mutate state via REST API and humans observe.
-
-Fork of [crshdn/mission-control](https://github.com/crshdn/mission-control), adapted for [OpenClaw](https://openclaw.ai) agent workflows.
+AI agent monitoring dashboard for [OpenClaw](https://openclaw.ai). Read-only kanban board where agents mutate state via REST API and humans observe in real-time.
 
 ## Features
 
-- **Read-only Kanban** — agents create/move tasks, humans watch
-- **Agent Discovery** — auto-discover agents from OpenClaw Gateway
-- **Dev-Tools Plan Viewer** — browse agent work plans, task trees, checkpoints
-- **Real-time Updates** — SSE-powered live feed
-- **Task API** — agents poll for work, report completions, register deliverables
-- **Mobile Responsive** — snap-scroll kanban, bottom sheet modals
-- **Multi-Instance** — run separate dashboards per user via Docker
+- **Kanban Board** — Task pipeline: Backlog → Assigned → In Progress → Review → Done
+- **Agent Sidebar** — Connected agents with status, OpenClaw session linking
+- **Live Feed** — Real-time activity stream via SSE
+- **Dev-Tools Plan Viewer** — Browse task plans from `~/.dev-tools/*/plans/`
+- **Tool Call Logs** — Stream JSONL tool call entries (stub, awaiting data)
+- **Token Usage** — Cost tracking and cache performance (stub, awaiting data)
+- **Mobile Responsive** — Swipeable kanban, bottom nav, slide-up drawers
 
-## Quick Start
+## Architecture
+
+- **Next.js 14** (App Router) + **SQLite** (better-sqlite3) + **Tailwind CSS**
+- **SSE** for real-time updates (in-memory broadcast)
+- **OpenClaw WebSocket** client with challenge-response auth
+- Agents interact via REST API; UI is read-only
+
+## Setup
+
+### Prerequisites
+
+- Node.js 20+
+- An OpenClaw gateway running locally
+
+### Install & Run
 
 ```bash
-# Clone
 git clone https://github.com/jaksm/mission-control.git
 cd mission-control
-
-# Install
 npm install
 
 # Configure
-cp .env.local.example .env.local
-# Edit .env.local with your gateway URL and token
+cp .env.example .env.local
+# Edit .env.local:
+#   OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789
+#   OPENCLAW_GATEWAY_TOKEN=<your-gateway-token>
+#   MC_API_TOKEN=<random-secret-for-agent-api>
 
-# Seed DB
-npm run db:seed
-
-# Build + Run (dev mode uses 7GB+ RAM — use production)
-npm run build
+# Build & start (production mode recommended — dev mode uses 7GB+ RAM)
+npx next build
 npx next start -p 4001
 ```
 
-Open http://localhost:4001
+### Multi-Profile Setup
 
-## Task Statuses
+Run separate instances per user:
 
+```bash
+# Jakša's instance
+PORT=4001 OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789 npx next start -p 4001
+
+# Aleksa's instance  
+PORT=4002 OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18839 npx next start -p 4002
 ```
-backlog → assigned → in_progress → review → done
+
+### Remote Access (Cloudflare Tunnel)
+
+Add ingress rules to your `~/.cloudflared/config.yml`:
+
+```yaml
+- hostname: jaksa-mc.yourdomain.dev
+  service: http://localhost:4001
+- hostname: aleksa-mc.yourdomain.dev
+  service: http://localhost:4002
 ```
+
+Protect with Cloudflare Access (email-based auth).
 
 ## Agent REST API
 
+Agents interact with Mission Control via these endpoints:
+
+```
+GET    /api/tasks?agent=developer&status=assigned   # Poll for assigned tasks
+PATCH  /api/tasks/:id                                # Update task status
+PATCH  /api/tasks/:id/complete                       # One-call completion
+POST   /api/webhooks/agent-completion                # Webhook callback
+```
+
+### Complete a task (agent call):
+
 ```bash
-# Poll for tasks
-GET /api/tasks?agent=developer&status=assigned
-
-# Update task
-PATCH /api/tasks/:id
-{ "status": "in_progress" }
-
-# Complete task (one-call)
-PATCH /api/tasks/:id/complete
-{
-  "summary": "What was done",
-  "deliverables": [{ "type": "file", "title": "output.html", "path": "/path" }]
-}
+curl -X PATCH http://localhost:4001/api/tasks/<id>/complete \
+  -H "Content-Type: application/json" \
+  -H "X-Agent-Name: developer" \
+  -d '{"status": "done", "summary": "Implemented feature X"}'
 ```
 
 ## Dev-Tools Integration
 
-Reads plan files from `~/.dev-tools/{project}/plans/`:
-
-```bash
-GET /api/devtools/projects          # List projects
-GET /api/devtools/plans?project=X   # List plans
-GET /api/devtools/plans/:id?project=X  # Full plan data
-```
-
-## Docker (Two Instances)
-
-```bash
-cp .env.docker.example .env
-# Fill in gateway tokens
-docker compose up -d --build
-```
-
-- Jakša: http://localhost:4001
-- Aleksa: http://localhost:4002
-
-## Cloudflare Tunnel
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for DNS + Access setup.
-
-## Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full codebase map.
-
-## Adaptation Decisions
-
-See [docs/ADAPTATION.md](docs/ADAPTATION.md) for what changed from upstream.
-
-## Stack
-
-- Next.js 14, TypeScript, Tailwind CSS
-- SQLite (better-sqlite3)
-- Zustand (client state)
-- Server-Sent Events (real-time)
-- OpenClaw Gateway WebSocket
+Reads plan data from `~/.dev-tools/{project}/plans/` (active + completed).
+Reads tool logs from `~/.dev-tools/{project}/logs/*.jsonl`.
 
 ## License
 

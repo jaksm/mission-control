@@ -10,6 +10,8 @@ import { MissionQueue } from '@/components/MissionQueue';
 import { LiveFeed } from '@/components/LiveFeed';
 import { SSEDebugPanel } from '@/components/SSEDebugPanel';
 import { DevToolsPanel } from '@/components/DevToolsPanel';
+import { ToolLogsPanel } from '@/components/ToolLogsPanel';
+import { UsagePanel } from '@/components/UsagePanel';
 import { MobileNav, MobileDrawer } from '@/components/MobileNav';
 import { useMissionControl } from '@/lib/store';
 import { useSSE } from '@/hooks/useSSE';
@@ -31,7 +33,7 @@ export default function WorkspacePage() {
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [activeView, setActiveView] = useState<'kanban' | 'plans'>('kanban');
+  const [activeView, setActiveView] = useState<'kanban' | 'plans' | 'logs' | 'usage'>('kanban');
   const [mobileDrawer, setMobileDrawer] = useState<'agents' | 'feed' | null>(null);
 
   // Connect to SSE for real-time updates
@@ -230,6 +232,26 @@ export default function WorkspacePage() {
         >
           🔧 Plans
         </button>
+        <button
+          onClick={() => setActiveView('logs')}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            activeView === 'logs'
+              ? 'text-mc-accent border-b-2 border-mc-accent'
+              : 'text-mc-text-secondary hover:text-mc-text'
+          }`}
+        >
+          🔍 Logs
+        </button>
+        <button
+          onClick={() => setActiveView('usage')}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            activeView === 'usage'
+              ? 'text-mc-accent border-b-2 border-mc-accent'
+              : 'text-mc-text-secondary hover:text-mc-text'
+          }`}
+        >
+          📊 Usage
+        </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden mobile-nav-offset">
@@ -241,9 +263,17 @@ export default function WorkspacePage() {
         {/* Main Content Area */}
         {activeView === 'kanban' ? (
           <MissionQueue workspaceId={workspace.id} />
-        ) : (
+        ) : activeView === 'plans' ? (
           <div className="flex-1 overflow-hidden">
             <DevToolsPanel />
+          </div>
+        ) : activeView === 'logs' ? (
+          <div className="flex-1 overflow-hidden">
+            <ToolLogsPanel project="openclaw-devtools" />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-hidden">
+            <UsagePanel project="openclaw-devtools" />
           </div>
         )}
 
