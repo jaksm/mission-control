@@ -135,3 +135,29 @@ body {
 .online-glow {
   box-shadow: 0 0 10px var(--mc-accent-green), 0 0 20px var(--mc-accent-green);
 }
+
+/* Mobile drawer slide-up */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Safe area for bottom nav on notched phones */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add bottom padding to main content when mobile nav visible */
+@media (max-width: 1023px) {
+  .mobile-nav-offset {
+    padding-bottom: 4.5rem;
+  }
+}

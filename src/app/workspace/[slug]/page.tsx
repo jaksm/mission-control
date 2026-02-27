@@ -10,6 +10,7 @@ import { MissionQueue } from '@/components/MissionQueue';
 import { LiveFeed } from '@/components/LiveFeed';
 import { SSEDebugPanel } from '@/components/SSEDebugPanel';
 import { DevToolsPanel } from '@/components/DevToolsPanel';
+import { MobileNav, MobileDrawer } from '@/components/MobileNav';
 import { useMissionControl } from '@/lib/store';
 import { useSSE } from '@/hooks/useSSE';
 import { debug } from '@/lib/debug';
