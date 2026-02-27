@@ -92,7 +92,7 @@ function TaskCard({ task, onClick }: TaskCardProps) {
       onClick={onClick}
       className="group bg-mc-bg-secondary border border-mc-border/50 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:shadow-black/20 hover:border-mc-accent/40 active:scale-[0.98]"
     >
-      <div className="p-3 sm:p-4">
+      <div className="p-4">
         {/* Title */}
         <h4 className="text-sm font-medium leading-snug line-clamp-2 mb-3">
           {task.title}

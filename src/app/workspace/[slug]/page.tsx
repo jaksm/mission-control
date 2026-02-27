@@ -32,6 +32,7 @@ export default function WorkspacePage() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [activeView, setActiveView] = useState<'kanban' | 'plans'>('kanban');
+  const [mobileDrawer, setMobileDrawer] = useState<'agents' | 'feed' | null>(null);
 
   // Connect to SSE for real-time updates
   useSSE();
@@ -231,7 +232,7 @@ export default function WorkspacePage() {
         </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden mobile-nav-offset">
         {/* Agents Sidebar — hidden on mobile */}
         <div className="hidden lg:block">
           <AgentsSidebar workspaceId={workspace.id} />
@@ -254,6 +255,30 @@ export default function WorkspacePage() {
 
       {/* Debug Panel - only shows when debug mode enabled */}
       <SSEDebugPanel />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNav
+        onShowAgents={() => setMobileDrawer('agents')}
+        onShowFeed={() => setMobileDrawer('feed')}
+        agentCount={useMissionControl.getState().agents.length}
+      />
+
+      {/* Mobile Drawers */}
+      <MobileDrawer
+        isOpen={mobileDrawer === 'agents'}
+        onClose={() => setMobileDrawer(null)}
+        title="Agents"
+      >
+        <AgentsSidebar workspaceId={workspace.id} />
+      </MobileDrawer>
+
+      <MobileDrawer
+        isOpen={mobileDrawer === 'feed'}
+        onClose={() => setMobileDrawer(null)}
+        title="Live Feed"
+      >
+        <LiveFeed />
+      </MobileDrawer>
     </div>
   );
 }

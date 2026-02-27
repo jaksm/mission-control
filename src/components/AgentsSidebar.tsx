@@ -118,7 +118,7 @@ export function AgentsSidebar({ workspaceId }: AgentsSidebarProps) {
   return (
     <aside
       className={`bg-mc-bg-secondary border-r border-mc-border flex flex-col transition-all duration-300 ease-in-out ${
-        isMinimized ? 'w-12' : 'w-64'
+        isMinimized ? 'w-12' : 'w-64 max-lg:w-full max-lg:border-r-0'
       }`}
     >
       {/* Header */}
