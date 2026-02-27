@@ -9,6 +9,7 @@ import { AgentsSidebar } from '@/components/AgentsSidebar';
 import { MissionQueue } from '@/components/MissionQueue';
 import { LiveFeed } from '@/components/LiveFeed';
 import { SSEDebugPanel } from '@/components/SSEDebugPanel';
+import { DevToolsPanel } from '@/components/DevToolsPanel';
 import { useMissionControl } from '@/lib/store';
 import { useSSE } from '@/hooks/useSSE';
 import { debug } from '@/lib/debug';
@@ -29,6 +30,7 @@ export default function WorkspacePage() {
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [activeView, setActiveView] = useState<'kanban' | 'plans'>('kanban');
 
   // Connect to SSE for real-time updates
   useSSE();
@@ -204,12 +206,42 @@ export default function WorkspacePage() {
     <div className="h-screen flex flex-col bg-mc-bg overflow-hidden">
       <Header workspace={workspace} />
 
+      {/* View Tabs */}
+      <div className="flex border-b border-mc-border px-4">
+        <button
+          onClick={() => setActiveView('kanban')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeView === 'kanban'
+              ? 'text-mc-accent border-b-2 border-mc-accent'
+              : 'text-mc-text-secondary hover:text-mc-text'
+          }`}
+        >
+          📋 Mission Queue
+        </button>
+        <button
+          onClick={() => setActiveView('plans')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeView === 'plans'
+              ? 'text-mc-accent border-b-2 border-mc-accent'
+              : 'text-mc-text-secondary hover:text-mc-text'
+          }`}
+        >
+          🔧 Dev Plans
+        </button>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
         {/* Agents Sidebar */}
         <AgentsSidebar workspaceId={workspace.id} />
 
         {/* Main Content Area */}
-        <MissionQueue workspaceId={workspace.id} />
+        {activeView === 'kanban' ? (
+          <MissionQueue workspaceId={workspace.id} />
+        ) : (
+          <div className="flex-1 overflow-hidden">
+            <DevToolsPanel />
+          </div>
+        )}
 
         {/* Live Feed */}
         <LiveFeed />
